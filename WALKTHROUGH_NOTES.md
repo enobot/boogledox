@@ -1,15 +1,17 @@
 # Walkthrough notes
 
-These steps match the local app as of 2026-11-04. Hosted sign-in and a public deployment are not set up.
+These steps match the code as of 2026-11-04. Local mode is verified. Hosted sign-in is implemented but has not been tested against a live Supabase project, and there is no public deployment.
 
-## Start
+## Start (local mode)
+
+Leave the Supabase variables unset, then:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3000. Run only one dev server at a time.
 
 The account menu starts on Tracy. Tracy, Nathan, and Nora are local demo accounts. Choosing one stores an HttpOnly cookie. It is not a password login. With no cookie, the server uses Tracy.
 
@@ -43,12 +45,21 @@ Other file types, empty files, and files that contain null bytes are rejected.
 
 Sharing the same person twice is rejected. An unknown email is rejected. A viewer cannot change who has access.
 
+## Hosted mode (not yet verified)
+
+After the setup in `README.md` → "Hosted mode setup", the app sends signed-out visitors to `/auth/sign-in`. Reviewers sign in with an account created in the Supabase dashboard. The account menu shows **Sign out** instead of the demo switcher. Local documents do not appear in hosted mode. Sharing uses the reviewers' Supabase emails.
+
+Verified on 2026-11-04 against the live project as Tracy: sign-in, create, format, refresh, import, and sharing with Nathan as Editor and Nora as Viewer. Signing in as Nathan or Nora against the live project has not been done yet.
+
 ## Checks already run
 
-- `npm test` — 9 Vitest tests against the real document store and import parser.
-- `npm run build` — production build completed.
-- `npm start` — the built app served the dashboard, the demo accounts, and the saved documents at http://localhost:3000.
+- `npm test`: 19 Vitest tests in 4 files (local repository and import, runtime mode, hosted RLS SQL on a temporary PGlite, proxy).
+- `npx tsc --noEmit` and `npx eslint src vitest.config.ts --max-warnings 0`: passed.
+- `npm run build`: passed for the current tree.
+- `npm start` without Supabase variables: every page and API returned 503, by design.
+- Browser, local mode, after the hosted changes: dashboard and tagline, account switcher (Tracy → Nora → Tracy), reopening an existing document, Nora's read-only view of a shared document, and `/auth/sign-in` rendering. Creating, formatting, and importing through the browser were not repeated in this pass.
+- Opening a document you own saves it once even with no edits, so its revision goes up. This is known and not yet fixed.
 
 ## Not in this checkout
 
-Supabase Auth, hosted Postgres, a public HTTPS deployment, Insert and Tools menus, extra formatting, and collaborative drafts.
+A live Supabase project, a public HTTPS deployment, Insert and Tools menus, extra formatting, and collaborative drafts.

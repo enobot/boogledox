@@ -3,12 +3,36 @@ import os from "node:os";
 import path from "node:path";
 import type { PGlite } from "@electric-sql/pglite";
 import { seedDemoAccounts } from "@/lib/auth/seed-demo-accounts";
+import { AppError } from "@/lib/documents/errors";
+import { readRuntimeMode } from "@/lib/auth/runtime-mode";
 
 const globalForDb = globalThis as unknown as {
   boogledoxDb?: Promise<PGlite>;
 };
 
 export function getDatabase(): Promise<PGlite> {
+  const mode = readRuntimeMode(process.env);
+
+  if (mode === "misconfigured") {
+    return Promise.reject(
+      new AppError(
+        "Boogle Dox is not configured for production. Add the Supabase URL and publishable key on the server.",
+        503,
+        "misconfigured",
+      ),
+    );
+  }
+
+  if (mode === "hosted") {
+    return Promise.reject(
+      new AppError(
+        "This production server stores documents in Supabase, not in the local database.",
+        503,
+        "misconfigured",
+      ),
+    );
+  }
+
   if (!globalForDb.boogledoxDb) {
     globalForDb.boogledoxDb = openDatabase().catch((error: unknown) => {
       globalForDb.boogledoxDb = undefined;
@@ -50,7 +74,7 @@ export async function closeDatabaseForTests(): Promise<void> {
 async function applyMigrations(database: PGlite): Promise<void> {
   const directory = path.join(process.cwd(), "supabase", "migrations");
   const files = (await fs.readdir(directory))
-    .filter((file) => file.endsWith(".sql"))
+    .filter((file) => file.endsWith(".sql") && !file.endsWith(".hosted.sql"))
     .sort();
   let migrationsReady = await migrationTableExists(database);
 

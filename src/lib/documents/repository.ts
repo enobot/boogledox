@@ -1,4 +1,15 @@
+import { getRuntimeMode } from "@/lib/auth/runtime-mode";
 import { getDatabase } from "@/lib/db/client";
+import {
+  changeAccessHosted,
+  createDocumentHosted,
+  getDocumentHosted,
+  grantAccessHosted,
+  listDocumentsHosted,
+  listPeopleHosted,
+  revokeAccessHosted,
+  updateDocumentHosted,
+} from "@/lib/documents/hosted-repository";
 import { AppError } from "@/lib/documents/errors";
 import {
   emptyDocument,
@@ -41,6 +52,10 @@ function notFound(): AppError {
 export async function listDocumentsForUser(
   userId: string,
 ): Promise<DocumentSummary[]> {
+  if (getRuntimeMode() === "hosted") {
+    return listDocumentsHosted();
+  }
+
   const database = await getDatabase();
   const result = await database.query<DocumentRow>(
     `SELECT d.id, d.owner_id, d.title, d.revision, d.created_at, d.updated_at,
@@ -61,6 +76,10 @@ export async function createDocument(
   title: string,
   content: RichTextDocument = emptyDocument(),
 ): Promise<DocumentDetails> {
+  if (getRuntimeMode() === "hosted") {
+    return createDocumentHosted(title, content);
+  }
+
   const database = await getDatabase();
   const id = crypto.randomUUID();
   const result = await database.query<DocumentRow>(
@@ -82,6 +101,10 @@ export async function getDocumentForUser(
   userId: string,
   documentId: string,
 ): Promise<DocumentDetails | null> {
+  if (getRuntimeMode() === "hosted") {
+    return getDocumentHosted(documentId);
+  }
+
   const stored = await findDocument(documentId);
   const role = stored ? await roleFor(userId, stored) : null;
 
@@ -97,6 +120,10 @@ export async function updateDocumentForUser(
   documentId: string,
   input: { title: string; content: RichTextDocument; revision: number },
 ): Promise<DocumentDetails> {
+  if (getRuntimeMode() === "hosted") {
+    return updateDocumentHosted(documentId, input);
+  }
+
   const existing = await findDocument(documentId);
   const role = existing ? await roleFor(userId, existing) : null;
 
@@ -184,6 +211,10 @@ export async function listDocumentPeople(
   userId: string,
   documentId: string,
 ): Promise<DocumentPerson[]> {
+  if (getRuntimeMode() === "hosted") {
+    return listPeopleHosted(documentId);
+  }
+
   const existing = await findDocument(documentId);
   const role = existing ? await roleFor(userId, existing) : null;
 
@@ -220,9 +251,14 @@ export async function grantDocumentAccess(
   emailInput: unknown,
   roleInput: unknown,
 ): Promise<DocumentPerson> {
-  const document = await requireOwner(userId, documentId);
   const email = assertShareEmail(emailInput);
   const role = assertAssignableRole(roleInput);
+
+  if (getRuntimeMode() === "hosted") {
+    return grantAccessHosted(documentId, email, role);
+  }
+
+  const document = await requireOwner(userId, documentId);
   const database = await getDatabase();
   const profile = await database.query<PersonRow>(
     `SELECT id, email, display_name, '' AS role
@@ -282,8 +318,13 @@ export async function changeDocumentAccess(
   targetUserId: string,
   roleInput: unknown,
 ): Promise<DocumentPerson> {
-  const document = await requireOwner(userId, documentId);
   const role = assertAssignableRole(roleInput);
+
+  if (getRuntimeMode() === "hosted") {
+    return changeAccessHosted(documentId, targetUserId, role);
+  }
+
+  const document = await requireOwner(userId, documentId);
 
   if (targetUserId === document.ownerId) {
     throw new AppError(
@@ -322,6 +363,11 @@ export async function revokeDocumentAccess(
   documentId: string,
   targetUserId: string,
 ): Promise<void> {
+  if (getRuntimeMode() === "hosted") {
+    await revokeAccessHosted(documentId, targetUserId);
+    return;
+  }
+
   const document = await requireOwner(userId, documentId);
 
   if (targetUserId === document.ownerId) {

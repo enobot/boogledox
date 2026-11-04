@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.15",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.119.0",
     "@tiptap/pm": "^3.32.2",
     "@tiptap/react": "^3.32.2",
     "@tiptap/starter-kit": "^3.32.2",

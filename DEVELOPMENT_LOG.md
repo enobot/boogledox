@@ -63,12 +63,53 @@ Verification on 2026-11-04:
 
 The file picker itself was not driven from the browser. Import was verified through `POST /api/documents/import`. The dev server had to be restarted so the already-open database applied `002_permissions.sql`.
 
+### Hosted Supabase integration (uncommitted)
+
+Commit `854c089` holds the local app. The work below is in the working tree only.
+
+Implemented: runtime modes (local, hosted, misconfigured), `src/proxy.ts`, `getClaims()`-based identity, `/auth/sign-in`, `POST /api/auth/sign-in` and `/api/auth/sign-out`, a Sign out button in hosted mode, `src/lib/documents/hosted-repository.ts`, `003_rls.hosted.sql`, `004_profile_trigger.hosted.sql`, and the runtime-mode and RLS tests. `@supabase/supabase-js` and `@supabase/ssr` were added.
+
+First verification, after the files were written: `npx tsc --noEmit` passed and `npx vitest run` passed 15 tests. ESLint flagged `window.location.assign` in `AccountSwitcher`; it was changed to `useRouter().push`.
+
+Second verification, 2026-11-04 afternoon:
+
+- `npx eslint src vitest.config.ts --max-warnings 0`: exit 0.
+- `npm run build`: passed.
+- Bug found by reading `src/proxy.ts`: a signed-out `POST /api/auth/sign-in` was answered 401 by the proxy before the route ran, so hosted sign-in could never succeed. `startsWith("/auth")` also treated paths like `/authors` as public. Added `src/proxy.test.ts`, which failed on both (401 instead of pass-through; 200 instead of a redirect). The proxy now exempts `/api/auth/*` from both the 401 and the redirect, and only `/auth/*` pages are public. The test then passed.
+- `npx tsc --noEmit`: exit 0. `npx vitest run`: 4 files, 19 tests passed. ESLint: exit 0 again.
+- `npm run build` failed twice with `EPERM: operation not permitted, unlink '.next\static\<build id>'`. Cause: OneDrive had turned the previous build's folder into a cloud placeholder (reparse tag `0x9000e01a`). Node's `readdir` reports it as a symlink, so Next.js's cleanup called `unlink` on a directory. Removing that one generated folder fixed it, and the build passed. It will recur while the repository is inside OneDrive.
+- `next start -p 3100` with no Supabase variables: `/`, `/auth/sign-in`, `/documents/<id>`, `GET /api/session`, `GET /api/documents`, and `POST /api/session` all returned 503 with `cache-control: private, no-store`. The PGlite folder was not written.
+- An orphaned `next dev` started at 1:01 PM by an earlier session was stuck at about 100% CPU and 12.6 GB RAM and did not answer requests. Next.js refused to start a second dev server in the same folder. Before it was stopped, the PGlite folder (992 files, 40,149,171 bytes, unchanged since 1:01 PM) was copied to `%USERPROFILE%\.boogledox\pglite-backup-2026-11-04-before-dev-restart` and verified by file count, byte count, and the `pg_control` hash. Tracy stopped the process.
+- Fresh `npm run dev` with no Supabase variables, real PGlite folder: the database reopened after the forced stop. `GET /api/session` returned mode `local`, Tracy, and the three demo accounts. `GET /api/documents` listed lesson, Browser check, Persisted page, and two Untitled documents.
+- Browser (in-app Chromium pane, desktop width, http://localhost:3000): the dashboard showed "Collaboration made easier", the account switcher on Tracy, and all five documents. "Persisted page" reopened with its H1 (bold, italic, underline), bullet, and numbered list. Switching to Nora showed only lesson under **Shared with me** as Viewer. Nora's lesson page showed "View only", a read-only title, non-editable content, all eight formatting buttons disabled, and the `<script>` text as text. The account was switched back to Tracy. `/auth/sign-in` rendered the email and password form. No console errors.
+- `POST /api/auth/sign-in` and `/api/auth/sign-out` returned 503 `misconfigured` in local mode.
+- Finding (pre-existing, not fixed): opening "Persisted page" as its owner sent a `PATCH` without any typing and moved it from revision 2 to 3. The content was unchanged. The editor files have not changed since `854c089`, so this predates the hosted work. It means opening a document can make another open copy's next save return 409. In development the editor showed "Opening document…" for several seconds on first open. That was not measured.
+
+Not tested: a live Supabase project, hosted sign-in, `004_profile_trigger.hosted.sql`, Vercel, Firefox, Safari, Edge, tablet, phone. Performance was not measured.
+
+### Live Supabase project, 2026-11-04 afternoon
+
+- Created project `boogledox` (Free plan, East US) with "Automatically expose new tables" off and automatic RLS on. Ran `001`–`004` in the SQL editor. A check query showed RLS on `documents`, `document_permissions`, `profiles`, and `schema_migrations`, the eight app functions, and the `on_auth_user_created` trigger.
+- Tracy created three users in the dashboard. The `004` trigger created a matching, confirmed profile for each.
+- `.env.local` (gitignored) holds the project URL and publishable key. The dev server reloaded it and switched to hosted mode.
+- Signed out: `/` redirected to `/auth/sign-in`, `GET /api/session` returned 401, a made-up account got the generic 401 from Supabase (this request was blocked by the proxy before the fix), a cross-origin sign-in got 403, and the demo cookie and `POST /api/session` got 401.
+- Signed in as Tracy (Tracy signed in herself), in Chrome: Sign out replaced the demo switcher. Created "Hosted check" with an H1 and bold text, reloaded, and it reopened from Supabase with formatting. Imported `hosted-lesson.md` through the file picker: heading, bold, the script text as text, and the bullet list. Shared it with Nathan as Editor and Nora as Viewer; the panel listed Tracy as Owner. Recorded as `docs/boogledox-demo.gif`.
+- Found: `anon` and `authenticated` hold `REFERENCES`, `TRIGGER`, and `TRUNCATE` on the app tables, because `REVOKE ... FROM PUBLIC` does not remove grants Supabase gives those roles. The Data API cannot use them. Revoke them in a follow-up migration.
+- Found: the dashboard text still describes the local demo switcher in hosted mode.
+- Not tested live: editor save as Nathan, viewer read-only as Nora, an unauthorized account, a copied link opened by another account, sign-out, duplicate share, unknown email. These are covered locally and by the RLS tests.
+
 ### Unresolved
-- Supabase project, auth, and hosted database are not connected.
-- Deployment to a public host is not started. A local production build and `npm start` check did succeed.
+- No public deployment yet. Hosted mode is verified only from `npm run dev` with `.env.local`.
+- `schema_migrations` has no RLS in hosted Postgres, and Supabase's default grants have not been inspected on a live project.
+- Any signed-in hosted user can read `profiles`, so registered emails can be enumerated.
+- `src/lib/supabase/client.ts` is unused, and its mode check would not work in a browser bundle.
+- Opening a document as owner or editor saves it once with no edits and bumps the revision.
+- Deployment to a public host is not started.
 - The demo account cookie is an allowlist, not authentication.
+- The share dialog focus trap is incomplete.
+- `npm audit` reported 8 moderate vulnerabilities. `npm audit fix --force` was not run.
 - Insert and Tools menus are omitted until they have working actions.
 - Font family, font size, color, highlight, alignment, checklists, indentation, and line spacing are not started.
 - Collaborative drafts are not started.
-- The git remote `https://github.com/enobot/boogledox.git` has not been initialized or pushed.
+- The local app is published at `https://github.com/enobot/boogledox` as commit `854c089`. The hosted work above is not committed.
 - `npm` once failed with `UNABLE_TO_VERIFY_LEAF_SIGNATURE` until `NODE_OPTIONS=--use-system-ca` was set. Later installs succeeded with that option.

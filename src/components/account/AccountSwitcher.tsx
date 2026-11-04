@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { DemoAccount } from "@/lib/auth/demo-accounts";
 
 export function AccountSwitcher() {
+  const router = useRouter();
   const [accounts, setAccounts] = useState<DemoAccount[]>([]);
   const [currentId, setCurrentId] = useState("");
+  const [mode, setMode] = useState<"local" | "hosted" | "misconfigured">("local");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -19,15 +22,17 @@ export function AccountSwitcher() {
         });
         const body = (await response.json().catch(() => null)) as {
           error?: string;
+          mode?: "local" | "hosted" | "misconfigured";
           account?: DemoAccount | null;
           accounts?: DemoAccount[];
         } | null;
 
-        if (!response.ok || !body?.accounts || !body.account) {
-          throw new Error(body?.error ?? "Could not load the demo accounts.");
+        if (!response.ok || !body?.account) {
+          throw new Error(body?.error ?? "Could not load the current account.");
         }
 
-        setAccounts(body.accounts);
+        setMode(body.mode ?? "local");
+        setAccounts(body.accounts ?? []);
         setCurrentId(body.account.id);
       } catch (loadError) {
         if (controller.signal.aborted) {
@@ -65,6 +70,35 @@ export function AccountSwitcher() {
     }
 
     window.location.reload();
+  }
+
+  async function signOut() {
+    setError(null);
+    const response = await fetch("/api/auth/sign-out", { method: "POST" });
+    const body = (await response.json().catch(() => null)) as { error?: string } | null;
+
+    if (!response.ok) {
+      setError(body?.error ?? "Could not sign out.");
+      return;
+    }
+
+    router.push("/auth/sign-in");
+    router.refresh();
+  }
+
+  if (mode === "hosted") {
+    return (
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="cursor-pointer rounded-full border border-line px-3 py-2 text-sm text-plum"
+          onClick={() => void signOut()}
+        >
+          Sign out
+        </button>
+        {error ? <span className="text-sm text-danger">{error}</span> : null}
+      </div>
+    );
   }
 
   return (
