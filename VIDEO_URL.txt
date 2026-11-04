@@ -1,1 +1,2 @@
-Walkthrough video (unlisted): ADD LINK HERE
+Walkthrough video (unlisted): ADD LOOM LINK HERE
+Silent demo of the live site (GIF): https://github.com/enobot/boogledox/blob/main/docs/boogledox-live-demo.gif
