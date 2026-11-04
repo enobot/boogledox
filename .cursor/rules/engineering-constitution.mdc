@@ -1,0 +1,10 @@
+---
+description: Permanent software engineering constitution for every change in this project
+alwaysApply: true
+---
+
+# PERMANENT SOFTWARE ENGINEERING CONSTITUTION
+
+Follow `CLAUDE.md` in this repository. It is the permanent engineering standard: inspect before changing, never weaken tests, verify real behavior, and report VERIFIED, FAILED, PARTIAL, or NOT TESTED with evidence.
+
+Tracy owns product, architecture, and creative decisions. Do not discard uncommitted work. Do not commit or push unless Tracy asks. Do not put an assistant or Cursor name in git history.

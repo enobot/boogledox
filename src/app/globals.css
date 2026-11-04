@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+:root {
+  --desk: #f6f1ea;
+  --paper: #fffdfb;
+  --lavender: #e4dcf4;
+  --muted: #7d6d96;
+  --plum: #3c2344;
+  --plum-deep: #2a1830;
+  --ink: #2c2430;
+  --line: #e7ddd4;
+  --danger: #9c3b4a;
+}
+
+@theme inline {
+  --color-desk: var(--desk);
+  --color-paper: var(--paper);
+  --color-lavender: var(--lavender);
+  --color-muted: var(--muted);
+  --color-plum: var(--plum);
+  --color-plum-deep: var(--plum-deep);
+  --color-ink: var(--ink);
+  --color-line: var(--line);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+  --font-serif: var(--font-literata);
+}
+
+body {
+  background: var(--desk);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+.sheet {
+  width: 8.5in;
+  background: var(--paper);
+  box-shadow: 0 16px 40px rgba(60, 35, 68, 0.08);
+}
+
+.ruler {
+  position: relative;
+  height: 28px;
+  overflow: hidden;
+  border-bottom: 1px solid #eadff3;
+  background-color: #f7f1f8;
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent,
+    transparent calc(0.25in - 1px),
+    rgba(60, 35, 68, 0.28) calc(0.25in - 1px),
+    rgba(60, 35, 68, 0.28) 0.25in
+  );
+}
+
+.ruler-margin {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1in;
+  background: rgba(125, 109, 150, 0.14);
+}
+
+.ruler-margin-left {
+  left: 0;
+}
+
+.ruler-margin-right {
+  right: 0;
+}
+
+.ruler-label {
+  position: absolute;
+  top: 4px;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.page {
+  min-height: 11in;
+  padding: 1in;
+}
+
+.boogle-editor {
+  min-height: 9in;
+  outline: none;
+  font-family: var(--font-literata), Georgia, serif;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+.boogle-editor h1,
+.boogle-editor h2,
+.boogle-editor h3 {
+  font-family: var(--font-literata), Georgia, serif;
+  line-height: 1.25;
+  font-weight: 650;
+  color: var(--plum);
+}
+
+.boogle-editor h1 {
+  margin: 0 0 0.75rem;
+  font-size: 2rem;
+}
+
+.boogle-editor h2 {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 1.5rem;
+}
+
+.boogle-editor h3 {
+  margin: 1rem 0 0.4rem;
+  font-size: 1.2rem;
+}
+
+.boogle-editor p {
+  margin: 0.55rem 0;
+}
+
+.boogle-editor ul,
+.boogle-editor ol {
+  margin: 0.55rem 0;
+  padding-left: 1.4rem;
+}
+
+.boogle-editor ul {
+  list-style: disc;
+}
+
+.boogle-editor ol {
+  list-style: decimal;
+}
+
+.boogle-editor li {
+  margin: 0.15rem 0;
+}
+
+.boogle-editor li p {
+  margin: 0;
+}
+
+.boogle-editor strong {
+  font-weight: 700;
+}
+
+.boogle-editor em {
+  font-style: italic;
+}
+
+.boogle-editor u {
+  text-decoration: underline;
+}
