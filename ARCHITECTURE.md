@@ -1,6 +1,44 @@
-# Architecture
+# Boogle Dox — Architecture & Engineering Decisions
 
-This describes the code that exists now. Collaborative drafts are not built. Local mode is verified. Hosted mode is verified against a live Supabase project for the owner account (sign-in, create, save, import, share). Editor and viewer accounts and a public deployment are not yet verified live.
+This describes the code that exists now. Collaborative Drafts are not built. My original proposed architecture is archived in `docs/archive/chatgpt-planning-pack/ARCHITECTURE.md`. Most of it held up; the differences are noted below.
+
+## Why this stack
+
+I chose a JavaScript-based web stack because Boogle Dox is designed to run directly in a browser. JavaScript is suited to interactive editor controls, formatting, menus, and immediate feedback. I have worked with React and Node.js before, so using a familiar ecosystem let me spend the timebox on product behavior rather than learning a new framework. The code is **TypeScript**, not plain JavaScript: static types help catch mismatched document and permission data during development.
+
+| Layer | Planned | Built |
+| --- | --- | --- |
+| Frontend | Next.js/React, TypeScript, Tailwind | Next.js 16.4.5 App Router, React 19.3.0, TypeScript, Tailwind CSS 4 |
+| Editor | Tiptap, JSON content | Tiptap 3.32.2, stored as Tiptap JSON |
+| Backend | Next.js server routes | Route handlers, plus `src/proxy.ts` (the Next.js 16 proxy) for sessions |
+| Persistence | Hosted Supabase Postgres | Supabase Postgres in production; **PGlite locally** (see below) |
+| Auth | Supabase Auth or seeded demo accounts | Both: Supabase Auth in production, three seeded demo accounts locally |
+| Deployment | Vercel | Vercel, deployed from GitHub `main` |
+| Testing | A focused permissions test | 19 Vitest tests, including the hosted RLS SQL |
+
+**PGlite for local development.** Using local PGlite was an implementation suggestion from the coding assistant during the first milestone, which I accepted. It let create, save, and reopen work before any hosted account existed. It runs real Postgres inside Node, uses the same SQL migration files Supabase receives, and lets tests run against a real database in a temporary folder.
+
+**Supabase and Vercel in production.** These were in my original plan. Supabase provides a hosted Postgres with built-in Auth and row-level security, so permissions are enforced in the database itself. Vercel is the native host for Next.js and deploys automatically from GitHub. Both free tiers cover evaluation, so reviewers don't pay for anything.
+
+**Data model as built.** It is close to my plan: `profiles` (my planned `users`), `documents` (with `revision`), and `document_permissions` (my planned `document_access`, without `granted_by`). The planned `edit_sessions` table was not built, because the collaboration plan moved to Collaborative Drafts.
+
+**Tradeoffs I kept from the plan:**
+- A rich-text library instead of hand-written contentEditable logic, for reliability and speed.
+- Structured JSON instead of raw HTML, so formatting is preserved and rendered safely.
+- Roles checked on the server instead of only in the UI, for security and testability.
+- A simple page visual and ruler instead of a pagination engine, for familiarity without scope explosion.
+- No CRDT/OT engine for simultaneous editing in this timebox.
+
+**Why testing, security, and reliability come first for me:** I would rather submit a failed test with an understood defect than an artificially passing suite. Permissions are the part of a sharing product that cannot be "mostly right." That standard is written down in `CLAUDE.md`, and the verification evidence is in `DEVELOPMENT_LOG.md`.
+
+## Collaborative Drafts (planned, not built)
+
+The next major feature replaces my earlier edit-lease idea:
+- Each collaborator works in an independent personal draft.
+- Changes come back through a GitHub-style review.
+- The team votes on what to merge.
+
+The likely building blocks are a `drafts` table holding a copy of the document JSON plus its base revision, a review record, and votes. The existing revision numbers already give each draft a clear base to compare against. None of this is implemented, and the merge and voting rules are not designed yet. Local mode is verified. Hosted mode is verified against a live Supabase project for the owner account (sign-in, create, save, import, share). Editor and viewer accounts and a public deployment are not yet verified live.
 
 ## Application
 

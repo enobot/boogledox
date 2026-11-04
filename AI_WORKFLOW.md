@@ -1,20 +1,55 @@
-# AI workflow
+# Boogle Dox — AI Workflow & My Engineering Judgment
 
-This file records what the coding assistant did in this repository. It does not describe the product owner's private decisions beyond the written brief.
+> Earlier versions: `docs/archive/chatgpt-planning-pack/AI_WORKFLOW.md` (planning draft) and `docs/archive/2026-11-04-repo-docs-before-final/AI_WORKFLOW.md` (build log).
 
-## 2026-11-04
+## How I approached AI use
 
-- The workspace was empty. The assistant inspected it, found no Node.js, npm, or Git, and installed Node.js LTS 26.13.0 and Git 2.56.0 with winget after the product owner said to download required tools.
-- The first `npx create-next-app` lookup failed because npm could not verify the registry certificate. The command was retried with `NODE_OPTIONS=--use-system-ca`. The scaffold then completed.
-- The assistant chose local PGlite so the save-and-reopen milestone could run without a Supabase account. That tradeoff is recorded in `ARCHITECTURE.md`. Hosted Supabase was not replaced in the product plan.
-- Python and C++ were considered because the product owner said to install needed tools. They were not installed. The chosen stack is Next.js, React, TypeScript, Tailwind, Tiptap, and PostgreSQL.
-- Collaborative drafts and voting were not started. The brief says the create-edit-save-refresh path comes first.
-- The assistant verified the first milestone in the browser and through the document API. Results are in `DEVELOPMENT_LOG.md`. A duplicate Tiptap underline extension was removed after the dev server reported it.
-- After that milestone, the assistant added `.txt` and `.md` import, owner/editor/viewer checks, and the three demo accounts. Vitest 5 was added because the assignment requires tests against the real repository. `@types/node` was raised to version 22 so Vitest 5 could install. The assistant ran the test command, the API checks, and the browser flow recorded in `DEVELOPMENT_LOG.md`. Prompt 1 was saved as `CLAUDE.md` and a short always-on editor rule points at it.
-- The assistant then added tests for an unknown email, an invalid share role, and a viewer attempting to share. `npm run build` succeeded, and `npm start` served the existing documents. `WALKTHROUGH_NOTES.md` records the local review path. Hosted Supabase and a public deployment were not started.
-- The local app was published as commit `854c089` under the product owner's git identity. An earlier commit showed a tool as co-author and was replaced at the product owner's request.
-- The assistant then wrote the hosted Supabase integration (runtime modes, proxy, sign-in and sign-out routes, hosted repository, RLS SQL, and tests) in the working tree. It was not committed. No Supabase project exists, so no key values were requested or invented.
-- In a later pass the assistant reran ESLint and the production build, then read the proxy and found that signed-out sign-in requests were rejected before reaching the sign-in route. It wrote a failing regression test first, made the smallest proxy change, and reran ESLint, TypeScript, all 19 tests, and the build. It also confirmed that `next start` without Supabase variables returns 503.
-- Two builds failed because OneDrive locked the previous build output. The assistant traced the cause to the cloud-placeholder folder and removed only that generated folder, without changing the build configuration.
-- The browser check of local mode was blocked by a stuck dev server left by an earlier session. The assistant backed up the local database before any restart and did not open it from a second process. The product owner stopped the stuck server. The assistant then restarted the dev server and ran the browser check recorded in `DEVELOPMENT_LOG.md`. It noticed that opening a document triggers a save with no edits and recorded it rather than changing the editor.
-- The six project docs were updated to separate implemented, verified, and untested behavior. `CONTINUATION.md` was rewritten because it still said hosted Supabase was not connected in code.
+I used AI as a development tool, not as a substitute for deciding what the product should be. My first step was deciding what I wanted Boogle Dox to feel like: a recognizable document editor with naming, useful formatting, a familiar menu bar, and reliable sharing. I also decided that reliable saving and access permissions matter more than trying to recreate Google Docs in a few hours.
+
+I wrote my engineering standard into `CLAUDE.md` before the build: inspect before changing, make the smallest safe change, never delete or weaken a failing test to get a green suite, enforce least privilege, and report every result as verified, failed, partial, or not tested. Every AI tool on this project worked under that standard.
+
+## Who did what
+
+**My decisions (product owner):** the product idea, the familiar editor experience, the requirements and scope cuts, owner/editor/viewer sharing, putting permissions ahead of live collaboration, the Collaborative Drafts direction with GitHub-style reviews and team voting, the Boogle Dox name, and the brand (I chose the tagline "Collaboration made easier" over an AI-written one). I approved each milestone, chose when to commit and push, and asked for the git history to be rewritten when a tool added itself as a co-author.
+
+**Hands-on steps I did myself:** signing in to Supabase and Vercel, creating the reviewer accounts and their passwords, entering the production environment variables in Vercel, and signing in to the live app for testing. The AI tools were not permitted to handle passwords or create accounts.
+
+| Tool | What it did |
+| --- | --- |
+| **ChatGPT** | Helped me organize requirements, evaluate tradeoffs, and draft the planning documents (product requirements, architecture plan, walkthrough outline). I reviewed and customized the product direction. |
+| **Cursor** (coding assistant) | Built the first local app: Next.js scaffold, Tiptap editor and menus, autosave with revision checks, PGlite persistence, `.txt`/`.md` import, sharing, and the first Vitest suite. It also installed Node.js and Git. |
+| **Claude** (Claude Code in the Claude desktop app) | Final verification and release: reran lint, type checks, tests, and builds; found and fixed the sign-in bug in the proxy; diagnosed the OneDrive build failure; ran the browser checks; created and configured the Supabase project and deployed to Vercel through my browser, with me doing the sign-ins; recorded the demo GIFs; and rewrote these documents from my planning pack. |
+
+The first draft of the hosted Supabase integration was written in an earlier assistant session before the final verification pass. The repository does not record which tool wrote it, so I'm not attributing it to one.
+
+## Where AI materially sped up the work
+
+- **Scaffolding and setup:** project setup, Tiptap wiring, and Tailwind styling were generated in minutes instead of hours.
+- **Security plumbing:** Supabase row-level-security SQL and the `SECURITY DEFINER` functions for save and sharing, plus a test that runs that SQL against a real Postgres (PGlite) as the `authenticated` role.
+- **Debugging:** tracing a build failure (`EPERM` on `.next`) to OneDrive turning build output into cloud placeholders, which Node reported as symlinks.
+- **Release work:** clicking through Supabase project setup and the Vercel import while I handled the parts that needed my credentials.
+
+## What was changed or rejected
+
+- **A duplicate Underline extension** was removed after the dev server warned about it; Tiptap's StarterKit already includes underline.
+- **A proxy that would have blocked every sign-in.** In review, the auth proxy turned out to reject signed-out requests to `/api/auth/sign-in`, so nobody could ever log in. The fix was test-first: a regression test reproduced the 401, then a two-line change made it pass. The test stays in the suite.
+- **Unsafe defaults.** When creating the Supabase project, "Automatically expose new tables" was turned off (Supabase's own recommendation) and automatic RLS was turned on, so only explicit grants control API access.
+- **An AI co-author line in git history.** A tool appended itself as a co-author on my first commit. I had the commit rewritten so the history shows only me, and later commits were checked on GitHub for any appended trailer.
+- **A dashboard tagline** written by AI was replaced with mine.
+- **Collaboration scope:** live multi-cursor editing and the edit-lease idea were not built. I kept access control and persistence first, and my Collaborative Drafts idea waits for the next phase.
+
+## How correctness was verified
+
+Nothing is marked done because it compiled or because an AI said it worked.
+
+- **Automated:** `npx vitest run` passes 19 tests in 4 files: the real repository and import parser on a temporary database, runtime-mode rules, the hosted RLS SQL, and the auth proxy. `npx tsc --noEmit`, `npx eslint src vitest.config.ts --max-warnings 0`, and `npm run build` pass.
+- **Failing tests kept:** the proxy test was written to fail before the fix, and no test was deleted, skipped, or weakened.
+- **Manual, local (Chrome, desktop):** create, format, refresh, import, share, Nora read-only, and switching demo accounts.
+- **Manual, live Supabase and Vercel (Chrome, desktop):** sign-in, create, format, refresh, import, and share. Signed-out redirects, a generic 401 for bad credentials, 403 for a cross-origin request, and the demo cookie ignored in production.
+- **Data safety:** the local database was backed up and the copy verified before a stuck dev server was stopped.
+
+**Not verified:** Firefox, Safari, Edge, tablet, and phone; performance (no LCP, INP, or CLS numbers); and signing in as the editor or viewer on the live site.
+
+## My view of AI in engineering
+
+AI can help move through repetitive setup, documentation, test ideas, and debugging faster. I still need to understand the code I ship, decide which features matter, verify edge cases, and own the final implementation. For this assignment, I want the reviewer to see my prioritization and reasoning as clearly as the product itself.

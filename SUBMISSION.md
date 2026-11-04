@@ -8,8 +8,13 @@ Boogle Dox is a lightweight document editor with import and owner/editor/viewer 
 | --- | --- |
 | Source code | This repository (`src/`, `supabase/migrations/`) |
 | Setup and run instructions | `README.md` |
+| Product requirements and my product thinking | `PRODUCT_REQUIREMENTS.md` |
 | Architecture note | `ARCHITECTURE.md` |
 | AI workflow note | `AI_WORKFLOW.md` |
+| Walkthrough script | `WALKTHROUGH_SCRIPT.md` |
+| PDF copies of the main documents | `docs/pdf/` |
+| Earlier versions (planning pack and pre-final docs) | `docs/archive/` |
+| Demo of the live site (GIF) | `docs/boogledox-live-demo.gif` |
 | Development log with every check and result | `DEVELOPMENT_LOG.md` |
 | Reviewer walkthrough steps | `WALKTHROUGH_NOTES.md` |
 | Demo GIF (hosted mode: import, imported formatting, sharing) | `docs/boogledox-demo.gif` |
