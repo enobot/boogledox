@@ -98,8 +98,14 @@ Not tested: a live Supabase project, hosted sign-in, `004_profile_trigger.hosted
 - Found: the dashboard text still describes the local demo switcher in hosted mode.
 - Not tested live: editor save as Nathan, viewer read-only as Nora, an unauthorized account, a copied link opened by another account, sign-out, duplicate share, unknown email. These are covered locally and by the RLS tests.
 
+### Vercel deployment, 2026-11-04
+
+- Commit `53dc329` was pushed to `main` (author and committer `enobot`, no trailer; checked on GitHub). Vercel project `boogledox-144u` imports `enobot/boogledox`, Next.js preset, with the two `NEXT_PUBLIC_SUPABASE_*` variables for Production and Preview (entered by Tracy). The first production build finished in 32 seconds.
+- `https://boogledox-144u.vercel.app`: `/` returned 307 to `/auth/sign-in`, `/auth/sign-in` returned 200, `/api/session` returned 401, a made-up account got the generic 401 from Supabase, the demo cookie got 401, and `Strict-Transport-Security` was set.
+- The Supabase Auth Site URL is still `http://localhost:3000`. Password sign-in does not use it, but email links would. Add the Vercel URL under Authentication → URL Configuration.
+
 ### Unresolved
-- No public deployment yet. Hosted mode is verified only from `npm run dev` with `.env.local`.
+- Signed-in flows on the public URL: see below if run.
 - `schema_migrations` has no RLS in hosted Postgres, and Supabase's default grants have not been inspected on a live project.
 - Any signed-in hosted user can read `profiles`, so registered emails can be enumerated.
 - `src/lib/supabase/client.ts` is unused, and its mode check would not work in a browser bundle.

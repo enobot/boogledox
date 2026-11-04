@@ -14,7 +14,7 @@ Boogle Dox is a lightweight document editor with import and owner/editor/viewer 
 | Reviewer walkthrough steps | `WALKTHROUGH_NOTES.md` |
 | Demo GIF (hosted mode: import, imported formatting, sharing) | `docs/boogledox-demo.gif` |
 | Walkthrough video URL | `VIDEO_URL.txt` |
-| Live product URL | Not deployed yet. See "Status" below. |
+| Live product URL | https://boogledox-144u.vercel.app (Vercel, deployed from `enobot/boogledox` `main`) |
 
 ## Reviewer accounts
 
@@ -32,14 +32,16 @@ Working and verified:
 - 19 automated tests, ESLint, TypeScript, and a production build pass.
 - Production without Supabase settings fails closed with 503 instead of using a local database.
 
+- Public deployment on Vercel. Checked on 2026-11-04: signed-out `/` redirects to `/auth/sign-in`, `/api/session` returns 401, a made-up account gets a generic 401 from Supabase, the local demo cookie is ignored, and HSTS is set.
+
 Incomplete:
 
-- Public deployment. The app has not been deployed to Vercel yet.
+- Signed-in flows on the public URL are recorded in `DEVELOPMENT_LOG.md` if they were run. Otherwise they were verified only from local development against the same Supabase project.
 - Signed in as Nathan or Nora against the live project (editor save, viewer read-only, unauthorized account, copied link) has not been run.
 - `anon` and `authenticated` still hold `REFERENCES`, `TRIGGER`, and `TRUNCATE` on the app tables in Supabase. The Data API cannot use them, but they should be revoked.
 - Opening a document as owner saves it once with no edits, which bumps its revision.
 
-Next with 2–4 more hours: deploy to Vercel and test the public URL with all three accounts, revoke the extra table privileges, stop the save-on-open, finish the share dialog focus trap, and add export to Markdown.
+Next with 2–4 more hours: test the public URL signed in as all three accounts, revoke the extra table privileges, stop the save-on-open, finish the share dialog focus trap, and add export to Markdown.
 
 ## Deliberately left out
 
